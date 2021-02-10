@@ -1,0 +1,12 @@
+# Defaults
+__pycache__
+node_modules
+.venv
+.serverless
+
+# Envs
+.env
+.env.prod
+
+# Tests
+tests/

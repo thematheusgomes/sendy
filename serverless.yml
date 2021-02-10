@@ -1,0 +1,56 @@
+service: sendy
+
+plugins:
+  - serverless-offline
+  - serverless-python-requirements
+  - serverless-plugin-resource-tagging
+
+package:
+  exclude:
+    - ./**
+    - '!src/**'
+
+custom:
+  pythonRequirements:
+    dockerizePip: non-linux
+
+useDotenv: true
+
+provider:
+  name: aws
+  runtime: python3.8
+  region: us-east-1
+  role: arn:aws:iam::212568053769:role/service-role/scheduledMessages-lambda
+  environment:
+    MYSQL_HOST: ${ env:MYSQL_HOST }
+    MYSQL_PORT: ${ env:MYSQL_PORT }
+    MYSQL_USER: ${ env:MYSQL_USER }
+    MYSQL_PASSWORD: ${ env:MYSQL_PASSWORD }
+    MYSQL_DATABASE: ${ env:MYSQL_DATABASE }
+    SENDY_URL: ${ env:SENDY_URL }
+    SENDY_API_KEY: ${ env:SENDY_API_KEY }
+    SENDY_LIST_KEY: ${ env:SENDY_LIST_KEY }
+  stackTags:
+    environment: tools
+    duration: temporary
+  lambdaHashingVersion: 20201221
+
+function:
+  sendy:
+    handler: src/main.handler
+    name: sendy
+    description: Updates Sendy subscribers list every week
+    memorySize: 128
+    timeout: 15
+    vpc:
+      subnetIds:
+        - subnet-4cc5f463
+        - subnet-6a679c20
+      securityGroupIds:
+        - sg-7d6a2534
+    events:
+      - schedule:
+          name: sendy-add-subscribers
+          rate: cron(0 11 * * 1)
+          input:
+            command: addSubscribers
