@@ -1,7 +1,6 @@
 import os
 import requests
 from src.log import Logger
-from src.card import card_contructor
 
 LOG = Logger()
 
