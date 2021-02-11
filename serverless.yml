@@ -1,7 +1,6 @@
 service: sendy
 
 plugins:
-  - serverless-offline
   - serverless-python-requirements
   - serverless-plugin-resource-tagging
 
@@ -20,7 +19,7 @@ provider:
   name: aws
   runtime: python3.8
   region: us-east-1
-  role: arn:aws:iam::212568053769:role/service-role/scheduledMessages-lambda
+  role: ${ env:LAMBDA_ROLE }
   environment:
     MYSQL_HOST: ${ env:MYSQL_HOST }
     MYSQL_PORT: ${ env:MYSQL_PORT }
@@ -35,11 +34,11 @@ provider:
     duration: temporary
   lambdaHashingVersion: 20201221
 
-function:
+functions:
   sendy:
     handler: src/main.handler
     name: sendy
-    description: Updates Sendy subscribers list every week
+    description: updates sendy subscribers list
     memorySize: 128
     timeout: 15
     vpc:
@@ -47,10 +46,11 @@ function:
         - subnet-4cc5f463
         - subnet-6a679c20
       securityGroupIds:
-        - sg-7d6a2534
+        - sg-0904d8d08276c7ed7
     events:
       - schedule:
           name: sendy-add-subscribers
-          rate: cron(0 11 * * 1)
+          description: updates sendy subscribers list every week
+          rate: cron(0 11 ? * 2 *)
           input:
             command: addSubscribers

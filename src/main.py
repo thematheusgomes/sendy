@@ -5,8 +5,8 @@ import mysql.connector
 from json import dumps
 from sendy.api import SendyAPI
 from mysql.connector import Error
-from queries import Queries as query
-from alert import google_chat_alert
+from src.queries import Queries as query
+from src.alert import google_chat_alert
 
 logging.basicConfig(format='%(asctime)s [%(levelname)s] [%(funcName)s] %(message)s', level=logging.INFO)
 
@@ -33,13 +33,16 @@ def get_subs():
                                             port=MYSQL_PORT,
                                             database=MYSQL_DATABASE,
                                             user=MYSQL_USER,
-                                            password=MYSQL_PASSWORD)
+                                            password="ahZv$uUQHS9r$2X$7")
         cursor = conn.cursor()
         cursor.execute(query.cp_subscribers_last7days)
         records = cursor.fetchall()
         logging.info(f'Total number of rows: {cursor.rowcount}')
+        if cursor.rowcount == 0:
+            logging.error('Service will exit because no record of new registrations was found')
+            sys.exit()
         return records
-    except Exception as e:
+    except Error as e:
         logging.exception('Error reading data from MySQL table')
 
 def close_conn(conn, cursor):

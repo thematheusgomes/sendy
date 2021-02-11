@@ -5,7 +5,8 @@ node_modules
 .serverless
 
 # Envs
-.env
+.env.local
+.env.dev
 .env.prod
 
 # Tests
