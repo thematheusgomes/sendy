@@ -21,6 +21,7 @@ provider:
   region: us-east-1
   role: ${ env:LAMBDA_ROLE }
   environment:
+    GOOGLE_CHAT_WEBHOOK: ${ env:GOOGLE_CHAT_WEBHOOK }
     MYSQL_HOST: ${ env:MYSQL_HOST }
     MYSQL_PORT: ${ env:MYSQL_PORT }
     MYSQL_USER: ${ env:MYSQL_USER }

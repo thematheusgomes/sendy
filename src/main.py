@@ -1,14 +1,14 @@
 import os
 import sys
-import logging
 import mysql.connector
 from json import dumps
 from sendy.api import SendyAPI
 from mysql.connector import Error
+from src.log import Logger, data_log
 from src.queries import Queries as query
 from src.alert import google_chat_alert
 
-logging.basicConfig(format='%(asctime)s [%(levelname)s] [%(funcName)s] %(message)s', level=logging.INFO)
+LOG = Logger()
 
 MYSQL_HOST = os.getenv('MYSQL_HOST')
 MYSQL_PORT = os.getenv('MYSQL_PORT')
@@ -20,7 +20,7 @@ SENDY_API_KEY = os.getenv('SENDY_API_KEY')
 SENDY_LIST_KEY = os.getenv('SENDY_LIST_KEY')
 
 def handler(event, context):
-    logging.info(f'Event: {dumps(event)}')
+    LOG.info(f'Event: {dumps(event)}')
     if event['command'] == 'addSubscribers':
         records = get_subs()
         subs_count, invalid_subs_count = add_subs(records)
@@ -28,31 +28,34 @@ def handler(event, context):
 
 def get_subs():
     try:
-        logging.info(f'Connecting to the database {MYSQL_DATABASE}')
+        LOG.info(f'Connecting to the database {MYSQL_DATABASE}')
         conn = mysql.connector.connect(host=MYSQL_HOST,
                                             port=MYSQL_PORT,
                                             database=MYSQL_DATABASE,
                                             user=MYSQL_USER,
-                                            password="ahZv$uUQHS9r$2X$7")
+                                            password=MYSQL_PASSWORD)
+        LOG.info('Set cursor')
         cursor = conn.cursor()
+        LOG.info('Execute query')
         cursor.execute(query.cp_subscribers_last7days)
+        LOG.info('Fetch data')
         records = cursor.fetchall()
-        logging.info(f'Total number of rows: {cursor.rowcount}')
+        LOG.info(f'Total number of rows: {cursor.rowcount}')
         if cursor.rowcount == 0:
-            logging.error('Service will exit because no record of new registrations was found')
+            LOG.error('Service will exit because no record of new registrations was found')
             sys.exit()
         return records
     except Error as e:
-        logging.exception('Error reading data from MySQL table')
+        LOG.exception('Error reading data from MySQL table')
 
 def close_conn(conn, cursor):
     if conn.is_connected():
         conn.close()
         cursor.close()
-        logging.info('MySQL connection is closed')
+        LOG.info('MySQL connection is closed')
 
 def add_subs(records):
-    logging.info(f'Adding new {MYSQL_DATABASE} subscribers')
+    LOG.info(f'Adding new {MYSQL_DATABASE} subscribers')
     subs_list = []
     alreary_subs_list = []
     invalid_subs_list = []
@@ -63,7 +66,7 @@ def add_subs(records):
         name = row[0]
         email = row[1]
         resp = sendy_subs(name, email)
-        if resp == True:
+        if resp == '1':
             subs_list.append(email)
             subs_count += 1
         elif resp == 'Already subscribed.':
@@ -73,22 +76,10 @@ def add_subs(records):
             invalid_subs_list.append(email)
             invalid_subs_count += 1
         elif resp == 'Invalid list ID.':
-            logging.error(resp)
+            LOG.error(resp)
             sys.exit()
-    logging.info(f'''Emails were successfully inserted: {dumps({
-        "Subscribers": {
-            "emails": subs_list,
-            "count": subs_count
-        },
-        "AlreadySubscribed": {
-            "emails": alreary_subs_list,
-            "count": already_subs_count
-        },
-        "InvalidEmails": {
-            "emails": invalid_subs_list,
-            "count": invalid_subs_count
-        }
-    })}''')
+    data_log = data_log(subs_list, subs_count, alreary_subs_list, already_subs_count, invalid_subs_list, invalid_subs_count)
+    LOG.info(f'''Emails were successfully inserted: {data_log}''')
     return subs_count, invalid_subs_count
 
 def sendy_subs(name, email):
@@ -104,7 +95,7 @@ def sendy_subs(name, email):
         )
         return response
     except Exception as e:
-        logging.exception('Error inserting emails in the list')
+        LOG.exception('Error inserting emails in the list')
 
 # To test locally
 if __name__ == '__main__':
