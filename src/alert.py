@@ -7,10 +7,9 @@ LOG = Logger()
 
 GOOGLE_CHAT_WEBHOOK = os.getenv('GOOGLE_CHAT_WEBHOOK')
 
-def google_chat_alert(subs_count, invalid_subs_count):
-    message = card_contructor(subs_count, invalid_subs_count)
+def google_chat_alert(message):
     resp = requests.post(
-        url='https://chat.googleapis.com/v1/spaces/AAAACVX4I8k/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=etHbGLoSjHkg0AX0xy-BrXJHFbNFZ5SYJgi8tY70dUo%3D',
+        url=GOOGLE_CHAT_WEBHOOK,
         headers={'Content-Type': 'application/json; charset=UTF-8'},
         json=message
     )

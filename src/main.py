@@ -6,6 +6,7 @@ from sendy.api import SendyAPI
 from mysql.connector import Error
 from src.log import Logger, data_log
 from src.queries import Queries as query
+from src.card import card_contructor
 from src.alert import google_chat_alert
 
 LOG = Logger()
@@ -23,8 +24,8 @@ def handler(event, context):
     LOG.info(f'Event: {dumps(event)}')
     if event['command'] == 'addSubscribers':
         records = get_subs()
-        subs_count, invalid_subs_count = add_subs(records)
-        google_chat_alert(subs_count, invalid_subs_count)
+        message = add_subs(records)
+        google_chat_alert(message)
 
 def get_subs():
     try:
@@ -41,12 +42,15 @@ def get_subs():
         LOG.info('Fetch data')
         records = cursor.fetchall()
         LOG.info(f'Total number of rows: {cursor.rowcount}')
+        close_conn(conn, cursor)
         if cursor.rowcount == 0:
             LOG.error('Service will exit because no record of new registrations was found')
+            google_chat_alert(message={"text": "[Sendy] There were no new registered subscribers"})
             sys.exit()
         return records
     except Error as e:
         LOG.exception('Error reading data from MySQL table')
+        google_chat_alert(message={"text": "[Sendy] Exception occurred with MySQL"})
 
 def close_conn(conn, cursor):
     if conn.is_connected():
@@ -77,10 +81,11 @@ def add_subs(records):
             invalid_subs_count += 1
         elif resp == 'Invalid list ID.':
             LOG.error(resp)
+            google_chat_alert(message={"text": f"[Sendy] {resp}"})
             sys.exit()
-    data_log = data_log(subs_list, subs_count, alreary_subs_list, already_subs_count, invalid_subs_list, invalid_subs_count)
-    LOG.info(f'''Emails were successfully inserted: {data_log}''')
-    return subs_count, invalid_subs_count
+    log = data_log(subs_list, subs_count, alreary_subs_list, already_subs_count, invalid_subs_list, invalid_subs_count)
+    LOG.info(f'Emails were successfully inserted: {log}')
+    return card_contructor(subs_count, invalid_subs_count)
 
 def sendy_subs(name, email):
     try:
@@ -96,6 +101,7 @@ def sendy_subs(name, email):
         return response
     except Exception as e:
         LOG.exception('Error inserting emails in the list')
+        google_chat_alert(message={"text": "Error inserting emails in the list"})
 
 # To test locally
 if __name__ == '__main__':
