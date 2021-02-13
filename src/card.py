@@ -1,4 +1,4 @@
-def card_contructor(subs_count, invalid_subs_count):
+def card_contructor(message):
     return {
       "cards": [
         {
@@ -12,7 +12,7 @@ def card_contructor(subs_count, invalid_subs_count):
               "widgets": [
                 {
                   "textParagraph": {
-                    "text": f"Subscribers list has been updated:<br>New Subscribers: <b>{subs_count}</b><br>Invalid Emails: <b>{invalid_subs_count}</b>"
+                    "text": f"{message}"
                   }
                 }
               ]

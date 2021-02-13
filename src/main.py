@@ -45,12 +45,12 @@ def get_subs():
         close_conn(conn, cursor)
         if cursor.rowcount == 0:
             LOG.error('Service will exit because no record of new registrations was found')
-            google_chat_alert(message={"text": "[Sendy] There were no new registered subscribers"})
+            google_chat_alert(card_contructor("<b><front color=\"#CB4335\">[ERROR]</font></b> There were no new registered subscribers"))
             sys.exit()
         return records
     except Error as e:
         LOG.exception('Error reading data from MySQL table')
-        google_chat_alert(message={"text": "[Sendy] Exception occurred with MySQL"})
+        google_chat_alert(card_contructor("<b><front color=\"#CB4335\">[ERROR]</font></b> Exception occurred with MySQL"))
 
 def close_conn(conn, cursor):
     if conn.is_connected():
@@ -66,10 +66,11 @@ def add_subs(records):
     subs_count = 0
     already_subs_count = 0
     invalid_subs_count = 0
+    api = sendy_api()
     for row in records:
         name = row[0]
         email = row[1]
-        resp = sendy_subs(name, email)
+        resp = sendy_subs(api, name, email)
         if resp == '1':
             subs_list.append(email)
             subs_count += 1
@@ -81,18 +82,25 @@ def add_subs(records):
             invalid_subs_count += 1
         elif resp == 'Invalid list ID.':
             LOG.error(resp)
-            google_chat_alert(message={"text": f"[Sendy] {resp}"})
+            google_chat_alert(card_contructor(f"<b><front color=\"#CB4335\">[ERROR]</font></b> {resp}"))
             sys.exit()
-    log = data_log(subs_list, subs_count, alreary_subs_list, already_subs_count, invalid_subs_list, invalid_subs_count)
+    total_subs = api.subscriber_count(SENDY_LIST_KEY)
+    log = data_log(subs_list, alreary_subs_list, invalid_subs_list, subs_count, already_subs_count, invalid_subs_count)
     LOG.info(f'Emails were successfully inserted: {log}')
-    return card_contructor(subs_count, invalid_subs_count)
+    return card_contructor(message=f"Subscribers list has been updated:<br>New Subscribers: <b>{subs_count}</b><br>Invalid Emails: <b>{invalid_subs_count}</b><br><b>Total Subscribers: {total_subs}</b>")
 
-def sendy_subs(name, email):
+def sendy_api():
     try:
         api = SendyAPI(
             host=SENDY_URL,
             api_key=SENDY_API_KEY,
         )
+        return api
+    except Exception as e:
+        LOG.exception('Error connecting to the sendy api')
+
+def sendy_subs(api, name, email):
+    try:
         response = api.subscribe(
             list=SENDY_LIST_KEY,
             email=email,
@@ -100,8 +108,8 @@ def sendy_subs(name, email):
         )
         return response
     except Exception as e:
-        LOG.exception('Error inserting emails in the list')
-        google_chat_alert(message={"text": "Error inserting emails in the list"})
+        LOG.exception('Error inserting emails in the sendy list')
+        google_chat_alert(card_contructor("<b><front color=\"#CB4335\">[ERROR]</font></b> Error inserting emails in the sendy's list"))
 
 # To test locally
 if __name__ == '__main__':
