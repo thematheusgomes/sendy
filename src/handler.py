@@ -20,7 +20,7 @@ SENDY_URL = os.getenv('SENDY_URL')
 SENDY_API_KEY = os.getenv('SENDY_API_KEY')
 SENDY_LIST_KEY = os.getenv('SENDY_LIST_KEY')
 
-def handler(event, context):
+def main(event, context):
     LOG.info(f'Event: {dumps(event)}')
     if event['command'] == 'addSubscribers':
         records = get_subs()

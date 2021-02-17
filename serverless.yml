@@ -37,7 +37,7 @@ provider:
 
 functions:
   sendy:
-    handler: src/main.handler
+    handler: src/handler.main
     name: sendy
     description: updates sendy subscribers list
     memorySize: 128
