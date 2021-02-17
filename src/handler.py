@@ -114,4 +114,4 @@ def sendy_subs(api, name, email):
 # To test locally
 if __name__ == '__main__':
     event = {"command": "addSubscribers"}
-    handler(event, context = None)
+    main(event, context = None)
