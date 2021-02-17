@@ -41,7 +41,7 @@ functions:
     name: sendy
     description: updates sendy subscribers list
     memorySize: 128
-    timeout: 15
+    timeout: 120
     vpc:
       subnetIds:
         - subnet-4cc5f463
